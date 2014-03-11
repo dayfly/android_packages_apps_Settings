@@ -50,6 +50,9 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
     private static final String KEY_LOCKSCREEN_MODLOCK_ENABLED = "lockscreen_modlock_enabled";
     private static final String KEY_LOCKSCREEN_TARGETS = "lockscreen_targets";
 
+    private static final String PREF_LOCKSCREEN_TORCH = "lockscreen_torch";
+    private static final String KEY_BLUR_RADIUS = "lockscreen_blur_radius";
+
     private CheckBoxPreference mEnableKeyguardWidgets;
     private CheckBoxPreference mEnableCameraWidget;
     private CheckBoxPreference mEnableApplicationWidget;
@@ -57,6 +60,8 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
     private CheckBoxPreference mEnableMaximizeWidgets;
     private ListPreference mBatteryStatus;
     private Preference mLockscreenTargets;
+    private CheckBoxPreference mGlowpadTorch;
+    private SeekBarPreference mBlurRadius;
 
     private ChooseLockSettingsHelper mChooseLockSettingsHelper;
     private LockPatternUtils mLockUtils;
@@ -83,6 +88,22 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
         mEnableApplicationWidget = (CheckBoxPreference) findPreference(KEY_ENABLE_APPLICATION_WIDGET);
         mEnableMaximizeWidgets = (CheckBoxPreference) findPreference(KEY_ENABLE_MAXIMIZE_WIGETS);
         mLockscreenTargets = findPreference(KEY_LOCKSCREEN_TARGETS);
+
+        mGlowpadTorch = (CheckBoxPreference) findPreference(PREF_LOCKSCREEN_TORCH);
+        mGlowpadTorch.setChecked(Settings.System.getInt(
+                getActivity().getApplicationContext().getContentResolver(),
+                Settings.System.LOCKSCREEN_GLOWPAD_TORCH, 0) == 1);
+        mGlowpadTorch.setOnPreferenceChangeListener(this);
+
+        mBlurRadius = (SeekBarPreference) findPreference(KEY_BLUR_RADIUS);
+        mBlurRadius.setValue(Settings.System.getInt(getContentResolver(),
+                Settings.System.LOCKSCREEN_BLUR_RADIUS, 14));
+        mBlurRadius.setOnPreferenceChangeListener(this);
+
+        // Remove glowpad torch if device doesn't have torch
+        if (!hasTorch()) {
+            prefs.removePreference(mGlowpadTorch);
+        }
 
         mEnableModLock = (CheckBoxPreference) findPreference(KEY_LOCKSCREEN_MODLOCK_ENABLED);
         if (mEnableModLock != null) {
@@ -239,6 +260,13 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
             // force it so update picks up correct values
             ((CheckBoxPreference) preference).setChecked(value);
             updateAvailableModLockPreferences();
+            return true;
+        } else if (preference == mGlowpadTorch) {
+            Settings.System.putInt(cr, Settings.System.LOCKSCREEN_GLOWPAD_TORCH, (Boolean) objValue ? 1 : 0);
+            return true;
+        } else if (preference == mBlurRadius) {
+            int radius = ((Integer) objValue).intValue();
+            Settings.System.putInt(cr, Settings.System.LOCKSCREEN_BLUR_RADIUS, radius);
             return true;
         }
 
